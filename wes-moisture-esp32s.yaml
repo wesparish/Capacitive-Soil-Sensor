@@ -1,0 +1,139 @@
+esphome:
+  name: soil_moisture_sensor_esp32
+  platform: ESP32
+  board: esp32doit-devkit-v1
+  platformio_options:
+    upload_speed: 921600
+
+wifi:
+  ssid: !secret ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Soil Moisture Sensor esp32"
+    password: !secret wifi_password
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+# Dry 0.7 - taken from in the air, probably should do it directly in dry soil
+# Wet 0.264 - taken from in a glass of water, probably should do it directly in saturated soil
+
+# Meter
+# wet - 1.527 volts in water
+# dry - 2.775 volts in air
+
+# esp8266 A0 pin
+# plant1
+# dry - 3.19 volts in air
+# wet - 1.65 volts in water
+# plant2
+# dry - 3.18 volts in air
+# wet - 1.72 volts in water
+# plant3
+# dry - 3.18 volts in air
+# wet - 1.66 volts in water
+# plant4
+# dry - 2.42 volts in air
+# wet - 1.05 volts in water
+sensor:
+  - platform: adc 
+    pin: A0
+    name: "Plant 1 Voltage"
+    id: volt1
+    icon: "mdi:flash"
+    update_interval: 0.1s
+    accuracy_decimals: 4
+    attenuation: 11db
+    filters:
+      - sliding_window_moving_average: # averages the last 10 results, probably overkill
+          window_size: 10
+          send_every: 10
+  - platform: template
+    name: "Plant 1 Soil Saturation"
+    id: plant1
+    icon: "mdi:water-percent"
+    unit_of_measurement: "%"
+    update_interval: .1s
+    accuracy_decimals: 0
+    lambda: |-
+      return id(volt1).state;
+    filters:
+      - calibrate_linear:
+          # Map 0.0 (from sensor) to 0.0 (true value)
+          - 3.19 -> 0.0
+          - 1.65 -> 100.0
+      - lambda: |-
+          if (x > 100) return 100.0;
+          if (x < 0) return 0.0;
+          return x;
+
+  - platform: adc 
+    pin: A3
+    name: "Plant 2 Voltage"
+    id: volt2
+    icon: "mdi:flash"
+    update_interval: 0.1s
+    accuracy_decimals: 4
+    attenuation: 11db
+    filters:
+      - sliding_window_moving_average: # averages the last 10 results, probably overkill
+          window_size: 10
+          send_every: 10
+  - platform: template
+    name: "Plant 2 Soil Saturation"
+    id: plant2
+    icon: "mdi:water-percent"
+    unit_of_measurement: "%"
+    update_interval: .1s
+    accuracy_decimals: 0
+    lambda: |-
+      return id(volt2).state;
+    filters:
+      - calibrate_linear:
+          # Map 0.0 (from sensor) to 0.0 (true value)
+          - 3.18 -> 0.0
+          - 1.72 -> 100.0
+      - lambda: |-
+          if (x > 100) return 100.0;
+          if (x < 0) return 0.0;
+          return x;
+
+  - platform: adc 
+    pin: A7
+    name: "Plant 3 Voltage"
+    id: volt3
+    icon: "mdi:flash"
+    update_interval: 0.1s
+    accuracy_decimals: 4
+    attenuation: 11db
+    filters:
+      - sliding_window_moving_average: # averages the last 10 results, probably overkill
+          window_size: 10
+          send_every: 10
+  - platform: template
+    name: "Plant 3 Soil Saturation"
+    id: plant3
+    icon: "mdi:water-percent"
+    unit_of_measurement: "%"
+    update_interval: .1s
+    accuracy_decimals: 0
+    lambda: |-
+      return id(volt3).state;
+    filters:
+      - calibrate_linear:
+          # Map 0.0 (from sensor) to 0.0 (true value)
+          - 3.18 -> 0.0
+          - 1.66 -> 100.0
+      - lambda: |-
+          if (x > 100) return 100.0;
+          if (x < 0) return 0.0;
+          return x;
